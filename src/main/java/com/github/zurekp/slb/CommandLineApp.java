@@ -1,45 +1,64 @@
 package com.github.zurekp.slb;
 
-import io.undertow.Undertow;
-import io.undertow.server.HttpHandler;
-import io.undertow.server.HttpServerExchange;
-import io.undertow.server.handlers.Cookie;
-import io.undertow.server.handlers.CookieImpl;
-import io.undertow.util.Headers;
-
+import java.io.IOException;
+import java.io.InputStream;
 import java.net.URI;
-import java.util.UUID;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.util.Properties;
 
 public class CommandLineApp {
-    public static void main(final String[] args) {
-        final Undertow node1 = testNode(8001, "node1");
-        final Undertow node2 = testNode(8002, "node2");
-        final Undertow node3 = testNode(8003, "node3");
+    private static final String DEFAULT_PROPERTY_FILE = "slb.properties";
 
-        node1.start();
-        node2.start();
-        node3.start();
+    public static void main(final String[] args) throws IOException {
+        final Properties properties = loadProperties(args);
+        final Configuration config = createConfiguration(properties);
 
-        final Configuration config = new Configuration();
-        config.addStickySessionCookieName("JSESSIONID");
-        config.addNode(URI.create("http://localhost:8001"), "node1");
-        config.addNode(URI.create("http://localhost:8002"), "node2");
-        config.addNode(URI.create("http://localhost:8003"), "node3");
-        final SimpleLoadBalancer loadBalancer = new SimpleLoadBalancer(config);
-        loadBalancer.start();
+        new SimpleLoadBalancer(config).start();
     }
 
-    private static Undertow testNode(final int port, final String nodeId) {
-        return Undertow.builder().addHttpListener(port, "localhost").setHandler(new HttpHandler() {
-            @Override
-            public void handleRequest(final HttpServerExchange exchange) throws Exception {
-                exchange.getResponseHeaders().put(Headers.CONTENT_TYPE, "text/plain");
-                final Cookie sessionCookie = exchange.getRequestCookies().get("JSESSIONID");
-                if ((sessionCookie == null) || (sessionCookie.getValue() == null) || !sessionCookie.getValue().startsWith(nodeId)) {
-                    exchange.getResponseCookies().put("JSESSIONID", new CookieImpl("JSESSIONID", nodeId + UUID.randomUUID().toString()));
-                }
-                exchange.getResponseSender().send("Hello World from " + nodeId);
+    private static Properties loadProperties(final String[] cmdLineArgs) throws IOException {
+        final Properties result = new Properties();
+
+        final Path defaultConfig = Paths.get(DEFAULT_PROPERTY_FILE).toAbsolutePath();
+        if (Files.exists(defaultConfig)) {
+            populateProperties(result, defaultConfig);
+        }
+
+        for (final String fileName : cmdLineArgs) {
+            populateProperties(result, Paths.get(fileName).toAbsolutePath());
+        }
+
+        return result;
+    }
+
+    private static Configuration createConfiguration(final Properties properties) {
+        final Configuration result = new Configuration();
+
+        result.setPort(Integer.parseInt(properties.getProperty("port", Integer.toString(Configuration.DEFAULT_PORT))));
+        result.setHost(properties.getProperty("host", Configuration.DEFAULT_HOST));
+        result.setNodeCookieName(properties.getProperty("node.cookie.name", Configuration.DEFAULT_NODE_COOKIE_NAME));
+
+        final String[] allCookies = properties.getProperty("sticky.session.cookie.names", "").split("\\s*[;,\\s]\\s*");
+        for (final String cookieName : allCookies)
+            if (!cookieName.isEmpty())
+                result.addStickySessionCookieName(cookieName);
+
+        for (final String configKey : properties.stringPropertyNames()) {
+            if (configKey.startsWith("node.") && configKey.endsWith(".uri") && configKey.length() > "node..uri".length()) {
+                final String nodeId = configKey.substring("node.".length(), configKey.length() - ".uri".length());
+                final URI uri = URI.create(properties.getProperty(configKey));
+                result.addNode(uri, nodeId);
             }
-        }).build();
+        }
+
+        return result;
+    }
+
+    private static void populateProperties(final Properties properties, final Path pathToFile) throws IOException {
+        try (InputStream is = Files.newInputStream(pathToFile)) {
+            properties.load(is);
+        }
     }
 }

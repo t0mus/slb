@@ -10,11 +10,15 @@ import java.util.Set;
 import static java.util.Objects.requireNonNull;
 
 public class Configuration {
+    public static final int DEFAULT_PORT = 8080;
+    public static final String DEFAULT_HOST = "localhost";
+    public static final String DEFAULT_NODE_COOKIE_NAME = "slb_node_id";
+
     private final Set<String> stickySessionCookieNames;
     private final Map<String, URI> nodeIdToNodeURI;
-    private String host = "localhost";
-    private int port = 8080;
-    private String nodeCookieName = "slb_node_id";
+    private String host = DEFAULT_HOST;
+    private int port = DEFAULT_PORT;
+    private String nodeCookieName = DEFAULT_NODE_COOKIE_NAME;
 
     public Configuration() {
         nodeIdToNodeURI = new HashMap<>();
