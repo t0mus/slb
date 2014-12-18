@@ -6,7 +6,7 @@
 
     <groupId>com.github.zurekp</groupId>
     <artifactId>slb</artifactId>
-    <version>0.0.1</version>
+    <version>0.0.3</version>
     <packaging>jar</packaging>
     <name>Simple Load Balancer</name>
     <description>Simple Load Balancer</description>

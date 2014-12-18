@@ -4,7 +4,7 @@ import io.undertow.Undertow;
 
 import static java.util.Objects.requireNonNull;
 
-class SimpleLoadBalancer {
+public class SimpleLoadBalancer {
     private final Undertow server;
 
     public SimpleLoadBalancer(final Configuration configuration) {
