@@ -39,6 +39,7 @@ public class CommandLineApp {
         result.setPort(Integer.parseInt(properties.getProperty("port", Integer.toString(Configuration.DEFAULT_PORT))));
         result.setHost(properties.getProperty("host", Configuration.DEFAULT_HOST));
         result.setNodeCookieName(properties.getProperty("node.cookie.name", Configuration.DEFAULT_NODE_COOKIE_NAME));
+        result.setShutdownPath(properties.getProperty("shutdown.path", Configuration.DEFAULT_SHUTDOWN_PATH));
 
         final String[] allCookies = properties.getProperty("sticky.session.cookie.names", "").split("\\s*[;,\\s]\\s*");
         for (final String cookieName : allCookies)

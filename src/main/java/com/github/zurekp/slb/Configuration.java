@@ -1,11 +1,7 @@
 package com.github.zurekp.slb;
 
 import java.net.URI;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 
 import static java.util.Objects.requireNonNull;
 
@@ -13,12 +9,14 @@ public class Configuration {
     public static final int DEFAULT_PORT = 8080;
     public static final String DEFAULT_HOST = "localhost";
     public static final String DEFAULT_NODE_COOKIE_NAME = "slb_node_id";
+    public static final String DEFAULT_SHUTDOWN_PATH = "slb/shutdown";
 
     private final Set<String> stickySessionCookieNames;
     private final Map<String, URI> nodeIdToNodeURI;
     private String host = DEFAULT_HOST;
     private int port = DEFAULT_PORT;
     private String nodeCookieName = DEFAULT_NODE_COOKIE_NAME;
+    private String shutdownPath = DEFAULT_SHUTDOWN_PATH;
 
     public Configuration() {
         nodeIdToNodeURI = new HashMap<>();
@@ -74,6 +72,17 @@ public class Configuration {
         if (normalize(nodeId).isEmpty()) throw new IllegalArgumentException("nodeId can't be empty");
 
         nodeIdToNodeURI.put(normalize(nodeId), nodeURI);
+    }
+
+    public void setShutdownPath(String path) {
+        requireNonNull(path, "path can't be null");
+        if (normalize(path).isEmpty()) throw new IllegalArgumentException("path can't be empty");
+
+        this.shutdownPath = path;
+    }
+
+    public String getShutdownPath() {
+        return shutdownPath;
     }
 
     public Set<String> getNodeIds() {
