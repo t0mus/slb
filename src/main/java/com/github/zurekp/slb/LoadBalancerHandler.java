@@ -7,6 +7,7 @@ import io.undertow.server.HttpServerExchange;
 import io.undertow.server.handlers.Cookie;
 import io.undertow.server.handlers.CookieImpl;
 import io.undertow.server.handlers.proxy.LoadBalancingProxyClient;
+import io.undertow.server.handlers.proxy.ProxyConnectionPool;
 import io.undertow.util.AttachmentKey;
 import io.undertow.util.ConduitFactory;
 import io.undertow.util.HeaderValues;
@@ -85,6 +86,7 @@ class LoadBalancerHandler implements HttpHandler {
         private final String nodeIdCookieName;
         private final Field routesFiled;
         private final Field hostNodeIdField;
+        private final Field hostConnectionPoolField;
 
         public TargetProxyClient(final Configuration configuration) {
             requireNonNull(configuration, "configuration can't be null");
@@ -93,11 +95,13 @@ class LoadBalancerHandler implements HttpHandler {
             try {
                 routesFiled = LoadBalancingProxyClient.class.getDeclaredField("routes");
                 hostNodeIdField = Host.class.getDeclaredField("jvmRoute");
+                hostConnectionPoolField = Host.class.getDeclaredField("connectionPool");
             } catch (final NoSuchFieldException e) {
                 throw new RuntimeException(e);
             }
             routesFiled.setAccessible(true);
             hostNodeIdField.setAccessible(true);
+            hostConnectionPoolField.setAccessible(true);
             for (final String nodeId : configuration.getNodeIds()) {
                 addHost(configuration.getNodeURI(nodeId), nodeId);
             }
@@ -126,7 +130,20 @@ class LoadBalancerHandler implements HttpHandler {
             if (nodeIdCookie == null) return null;
             final String nodeId = nodeIdCookie.getValue();
             if (nodeId == null) return null;
-            return getHost(nodeId);
+            Host candidate = getHost(nodeId);
+            if (candidate != null && isConnectionPoolAvailable(candidate)) return candidate;
+            return null;
+        }
+
+        private boolean isConnectionPoolAvailable(Host host) {
+            ProxyConnectionPool connectionPool;
+            try {
+                connectionPool = (ProxyConnectionPool) hostConnectionPoolField.get(host);
+            } catch (IllegalAccessException e) {
+                throw new RuntimeException(e);
+            }
+            ProxyConnectionPool.AvailabilityType state = connectionPool.available();
+            return state != ProxyConnectionPool.AvailabilityType.CLOSED && state != ProxyConnectionPool.AvailabilityType.PROBLEM;
         }
 
         private Host getHost(final String nodeId) {
