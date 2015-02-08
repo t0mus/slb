@@ -22,7 +22,6 @@ public class CommandLineApp {
         final Properties result = new Properties();
 
         final Path defaultConfig = Paths.get(DEFAULT_PROPERTY_FILE).toAbsolutePath();
-        System.out.println(defaultConfig);
         if (Files.exists(defaultConfig)) {
             populateProperties(result, defaultConfig);
         }
