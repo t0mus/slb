@@ -28,9 +28,9 @@ public class SimpleLoadBalancer {
         {
             sslContext = createSslContext(configuration);
         }
-        catch (IOException ioexception)
+        catch (IOException | NoSuchAlgorithmException | KeyManagementException e)
         {
-            System.err.println("unable to create ssl context due to: " + ioexception.getMessage());
+            System.err.println("unable to create ssl context due to: " + e.getMessage());
         }
         Undertow.Builder builder = Undertow.builder();
         if (sslContext!=null)
@@ -68,20 +68,15 @@ public class SimpleLoadBalancer {
         return result;
     }
 
-    private SSLContext createSslContext(final Configuration configuration) throws IOException {
+    private SSLContext createSslContext(final Configuration configuration) throws IOException, NoSuchAlgorithmException, KeyManagementException
+    {
         KeyStore keyStore = loadKeyStore(configuration.getKeyStoreLocation(), configuration.getKeyStoreType(), configuration.getKeyStorePassword());
 
         KeyManager[] keyManagers = buildKeyManagers(keyStore, configuration.getKeyStorePassword().toCharArray());
         TrustManager[] trustManagers = buildTrustManagers();
 
-        SSLContext sslContext;
-        try {
-            sslContext = SSLContext.getInstance("TLS");
-            sslContext.init(keyManagers, trustManagers, null);
-        }
-        catch (NoSuchAlgorithmException | KeyManagementException exc) {
-            throw new IOException("Unable to create and initialise the SSLContext", exc);
-        }
+        SSLContext sslContext = SSLContext.getInstance("TLS");
+        sslContext.init(keyManagers, trustManagers, null);
 
         return sslContext;
     }
