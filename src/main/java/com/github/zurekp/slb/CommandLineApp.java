@@ -36,7 +36,11 @@ public class CommandLineApp {
     private static Configuration createConfiguration(final Properties properties) {
         final Configuration result = new Configuration();
 
+        result.setKeyStoreType(properties.getProperty("keystore.type", Configuration.DEFAULT_KEYSTORE_TYPE));
+        result.setKeyStorePassword(properties.getProperty("keystore.password", Configuration.DEFAULT_KEYSTORE_PASSWORD));
+        result.setKeyStoreLocation(properties.getProperty("keystore.location", Configuration.DEFAULT_KEYSTORE_LOCATION));
         result.setPort(Integer.parseInt(properties.getProperty("port", Integer.toString(Configuration.DEFAULT_PORT))));
+        result.setSslPort(Integer.parseInt(properties.getProperty("port.ssl", Integer.toString(Configuration.DEFAULT_SSL_PORT))));
         result.setHost(properties.getProperty("host", Configuration.DEFAULT_HOST));
         result.setNodeCookieName(properties.getProperty("node.cookie.name", Configuration.DEFAULT_NODE_COOKIE_NAME));
         result.setShutdownPath(properties.getProperty("shutdown.path", Configuration.DEFAULT_SHUTDOWN_PATH));
